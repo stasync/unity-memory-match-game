@@ -25,6 +25,9 @@ namespace Code.Presentation
 
         [SerializeField] private CardView _cardViewPrefab;
 
+        [Tooltip("Draws the prototype IMGUI overlay. It reveals every card's type, so keep it off outside of debugging.")]
+        [SerializeField] private bool _showDebugOverlay;
+
         private GameManager _gameManager;
         private PrototypePresentationDrawer _presentationDrawer;
 
@@ -93,9 +96,41 @@ namespace Code.Presentation
         private void OnStartStopButtonPressed()
         {
             if (_gameManager.CurrentGameSession == null)
+            {
+                var boardSizeError = GetBoardSizeError();
+                if (boardSizeError != null)
+                {
+                    Debug.LogError(boardSizeError, this);
+                    return;
+                }
+
                 _gameManager.StartOrRestartGame(rows: _desiredRows, columns: _desiredColumns);
+            }
             else
                 _gameManager.TryStopCurrentSession();
+        }
+
+        /// <summary>
+        /// Returns a description of why the desired board can't be built, or null if it can.
+        /// </summary>
+        private string GetBoardSizeError()
+        {
+            var cellCount = _desiredRows * _desiredColumns;
+            if (cellCount % 2 != 0)
+                return $"Board {_desiredRows}x{_desiredColumns} has an odd number of cells, so cards can't be paired.";
+
+            var pairCount = cellCount / 2;
+            if (_visualData != null && _visualData.CellVisualData.Length < pairCount)
+                return $"Board {_desiredRows}x{_desiredColumns} needs {pairCount} card sprites, but '{_visualData.name}' has only {_visualData.CellVisualData.Length}.";
+
+            return null;
+        }
+
+        private void OnValidate()
+        {
+            var boardSizeError = GetBoardSizeError();
+            if (boardSizeError != null)
+                Debug.LogWarning(boardSizeError, this);
         }
 
         private void OnSaveButtonPressed() =>
@@ -145,7 +180,10 @@ namespace Code.Presentation
             _scoreView.UpdateTime(_gameManager.CurrentGameSession.Time);
         }
 
-        private void OnGUI() =>
-            _presentationDrawer.OnGUI();
+        private void OnGUI()
+        {
+            if (_showDebugOverlay)
+                _presentationDrawer?.OnGUI();
+        }
     }
 }

@@ -37,12 +37,12 @@ namespace Code.GameManagement
         public event Action Started = delegate { };
 
         /// <summary>
-        /// Invokes when used turn is started.
+        /// Invoked when the user turn is started.
         /// </summary>
         public event Action TurnStarted = delegate { };
 
         /// <summary>
-        /// Invokes when used turn is finished.
+        /// Invoked when the user turn is finished.
         /// Bool represents whether it was a match or not.
         /// </summary>
         public event Action<bool> TurnFinished = delegate { };
@@ -73,7 +73,7 @@ namespace Code.GameManagement
         public int Columns => _boardState.Columns;
 
         /// <summary>
-        /// An amount of turns user has been done so far.
+        /// The number of turns the user has made so far.
         /// </summary>
         public int Turns { get; private set; }
 
@@ -83,7 +83,7 @@ namespace Code.GameManagement
         public int Matches { get; private set; }
 
         /// <summary>
-        /// An amount of turns user has been done so far.
+        /// The number of consecutive matches (reset on a mismatch).
         /// </summary>
         public int Combo { get; private set; }
 
@@ -93,9 +93,9 @@ namespace Code.GameManagement
         public float Time { get; private set; }
 
         /// <summary>
-        /// A time, before game starts. UI systems has to ensure that board is visible during this period.
+        /// A time, before game starts. UI systems have to ensure that board is visible during this period.
         /// </summary>
-        private float _startTimout;
+        private float _startTimeout;
 
         private readonly BoardState _boardState;
         private BoardLocation? _currentSelectedLocation;
@@ -103,7 +103,7 @@ namespace Code.GameManagement
         /// <summary>
         /// Initialize a new game session with explicit rows/columns arguments.
         /// </summary>
-        internal GameSession(int rows, int columns, float startTimout = 0f)
+        internal GameSession(int rows, int columns, float startTimeout = 0f)
         {
             if (rows < MIN_ROWS || rows > MAX_ROWS || columns < MIN_COLUMNS || columns > MAX_COLUMNS)
                 throw new IndexOutOfRangeException(
@@ -112,9 +112,9 @@ namespace Code.GameManagement
             var totalStates = rows * columns;
             if (totalStates % 2 != 0)
                 throw new ArgumentException(
-                    "The total number of board cells (rows * cols) must be even (pairing required");
+                    "The total number of board cells (rows * cols) must be even (pairing required).");
 
-            _startTimout = Mathf.Max(startTimout, 0f);
+            _startTimeout = Mathf.Max(startTimeout, 0f);
 
             var internalState = new BoardCellState[rows, columns];
             var numberOfPairs = totalStates / 2;
@@ -122,7 +122,7 @@ namespace Code.GameManagement
             // Here we store all the card states linearly.
             var allValues = new List<byte>();
 
-            // Iterate of the unique card types count [0 to numberOfPairs - 1] and add to the collection of the sates. Each cart type will appear twice.
+            // Iterate over the unique card types [0 to numberOfPairs - 1] and add them to the collection of states. Each card type will appear twice.
             for (byte stateTypeIndex = 0; stateTypeIndex < numberOfPairs; stateTypeIndex++)
             {
                 // Add pair to the list.
@@ -157,9 +157,9 @@ namespace Code.GameManagement
         /// <summary>
         /// Initialize a new game session from the binary blob using <see cref="ISessionSerializationStrategy"/> implementation.
         /// </summary>
-        internal GameSession(byte[] bytes, float startTimout = 0f)
+        internal GameSession(byte[] bytes, float startTimeout = 0f)
         {
-            _startTimout = Mathf.Max(startTimout, 0f);
+            _startTimeout = Mathf.Max(startTimeout, 0f);
 
             var sessionState = serializationStrategy.Deserialize(bytes);
             Turns = sessionState.Turns;
@@ -176,9 +176,9 @@ namespace Code.GameManagement
         public void OnInput(in BoardLocation inputLocation)
         {
             // Game is not started yet.
-            if (_startTimout > 0f)
+            if (_startTimeout > 0f)
             {
-                Debug.LogError($"Unable to make a move yet, current timeout is '{_startTimout}'.");
+                Debug.LogError($"Unable to make a move yet, current timeout is '{_startTimeout}'.");
                 return;
             }
 
@@ -251,12 +251,12 @@ namespace Code.GameManagement
 
         internal void Update(float deltaTime)
         {
-            if (_startTimout > 0)
+            if (_startTimeout > 0)
             {
-                _startTimout -= deltaTime;
-                if (_startTimout <= 0)
+                _startTimeout -= deltaTime;
+                if (_startTimeout <= 0)
                 {
-                    _startTimout = 0;
+                    _startTimeout = 0;
                     Started();
                 }
             }
@@ -268,7 +268,7 @@ namespace Code.GameManagement
             ref _boardState.GetStateRef(row, column);
 
         /// <summary>
-        /// Saves the session sate as binary blob, using see <see cref="ISessionSerializationStrategy"/> implmenetation.
+        /// Saves the session state as a binary blob, using the <see cref="ISessionSerializationStrategy"/> implementation.
         /// </summary>
         /// <returns></returns>
         public byte[] Serialize() =>

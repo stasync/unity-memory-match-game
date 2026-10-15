@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Code.Presentation
 {
     /// <summary>
-    /// NOTE: this temporary code to test the basic logic, and board initialization. Will be removed later.
+    /// NOTE: this is temporary code to test the basic logic, and board initialization. Will be removed later.
     /// </summary>
     internal sealed class PrototypePresentationDrawer
     {

@@ -18,6 +18,7 @@ namespace Code.Presentation
         [SerializeField] private AnimationCurve _hideIconAnimation = new();
 
         private Coroutine _currentCoroutine;
+        private bool _isVisible;
 
         private BoardLocation _location;
 
@@ -29,7 +30,11 @@ namespace Code.Presentation
             _image.sprite = sprite;
             _image.enabled = true;
             _image.transform.localScale = Vector3.one;
+            _isVisible = true;
             _button.interactable = false;
+
+            // Coroutines were stopped when the card was deactivated by the pool.
+            _currentCoroutine = null;
 
             _location = location;
             _clicked = clicked;
@@ -42,7 +47,12 @@ namespace Code.Presentation
 
         internal void SetVisible(bool value)
         {
-            var curve = value ? _hideIconAnimation : _revealIconAnimation;
+            // Don't replay the animation if the card is already in the requested state.
+            if (_isVisible == value)
+                return;
+
+            _isVisible = value;
+            var curve = value ? _revealIconAnimation : _hideIconAnimation;
             if (_currentCoroutine != null)
                 StopCoroutine(_currentCoroutine);
 
@@ -57,16 +67,20 @@ namespace Code.Presentation
         /// </summary>
         private IEnumerator AnimateRoutine(AnimationCurve curve)
         {
-            var currentTime = _animationTime;
-            while (currentTime >= 0f)
+            // Curves are authored over a normalized [0, 1] time range.
+            var elapsedTime = 0f;
+            while (elapsedTime < _animationTime)
             {
-                var scaleFactor = curve.Evaluate(currentTime);
-                _image.transform.localScale = new Vector3(scaleFactor, scaleFactor, 1f);
-                currentTime = Mathf.Max(0f, currentTime - Time.deltaTime);
+                SetIconScale(curve.Evaluate(elapsedTime / _animationTime));
+                elapsedTime += Time.deltaTime;
                 yield return null;
             }
 
+            SetIconScale(curve.Evaluate(1f));
             _currentCoroutine = null;
         }
+
+        private void SetIconScale(float scaleFactor) =>
+            _image.transform.localScale = new Vector3(scaleFactor, scaleFactor, 1f);
     }
 }

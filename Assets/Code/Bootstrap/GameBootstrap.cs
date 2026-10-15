@@ -6,10 +6,10 @@ namespace Code.Bootstrap
 {
     /// <summary>
     /// Will be responsible for wiring all the initial services (like game manager and presentation).
-    /// Object hast to be in the bootstrap scene.
+    /// Object has to be in the bootstrap scene.
     /// </summary>
     [DisallowMultipleComponent]
-    internal sealed class GameBoostrap : MonoBehaviour
+    internal sealed class GameBootstrap : MonoBehaviour
     {
         [SerializeField] private GameViewController _gameViewControllerPrefab;
         private GameManager _gameManager;

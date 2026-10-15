@@ -22,7 +22,7 @@ namespace Code.Presentation
         [SerializeField] private RectTransform _rectTransform;
 
         private GameSession _gameSession;
-        private CardViewPool _cardViewViewPool;
+        private CardViewPool _cardViewPool;
         private CellsVisualData _visualData;
         private CardView[,] _cardInstances;
 
@@ -37,7 +37,7 @@ namespace Code.Presentation
 
         internal void Initialize(CardView cardViewPrefab, CellsVisualData cellsVisualData)
         {
-            _cardViewViewPool ??= new CardViewPool(cardViewPrefab, transform);
+            _cardViewPool ??= new CardViewPool(cardViewPrefab, transform);
             _visualData = cellsVisualData;
         }
 
@@ -58,7 +58,7 @@ namespace Code.Presentation
                 for (var column = 0; column < session.Columns; column++)
                 {
                     var state = session.GetState(row, column);
-                    var cardViewInstance = _cardViewViewPool.Get();
+                    var cardViewInstance = _cardViewPool.Get();
                     cardViewInstance.Init(_visualData.CellVisualData[state.Type], new BoardLocation(row, column), OnCardClicked);
                     _cardInstances[row, column] = cardViewInstance;
                 }
@@ -91,6 +91,9 @@ namespace Code.Presentation
             
             _currentTurnClickedCards.Enqueue(boardLocation);
             SetCardVisible(boardLocation, value: true);
+
+            // A face-up card can't be picked again within the same turn.
+            SetCardInteractable(boardLocation, value: false);
         }
 
         private void OnCardClicked(BoardLocation boardLocation) =>
@@ -113,11 +116,15 @@ namespace Code.Presentation
             }
 
             while (_currentTurnClickedCards.TryDequeue(out var boardLocation))
+            {
+                // Mismatched cards can be picked again while they are still face-up.
+                SetCardInteractable(boardLocation, value: true);
                 _delayedDisabledCards.Add(new CardDisableRequest
                 {
                     Location = boardLocation,
                     Time = 1f
                 });
+            }
         }
 
         internal void TryReleaseSession()
@@ -125,9 +132,13 @@ namespace Code.Presentation
             if (_gameSession == null)
                 return;
 
+            // Drop pending turn state so it doesn't leak into the next session.
+            _currentTurnClickedCards.Clear();
+            _delayedDisabledCards.Clear();
+
             _gameSession = null;
             foreach (var card in _cardInstances)
-                _cardViewViewPool.Release(card);
+                _cardViewPool.Release(card);
             _cardInstances = null;
         }
 

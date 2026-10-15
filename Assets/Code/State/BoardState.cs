@@ -26,7 +26,7 @@ namespace Code.State
         {
             if (row < 0 || row >= Rows || column < 0 || column >= Columns)
                 throw new IndexOutOfRangeException(
-                    $"Invalid cell address r:{row} c:{column}. Coordinates must in the following range: [0, {Rows - 1}] for rows and [0, {Columns - 1}] for columns.");
+                    $"Invalid cell address r:{row} c:{column}. Coordinates must be in the following range: [0, {Rows - 1}] for rows and [0, {Columns - 1}] for columns.");
 
             return ref _internalState[row, column];
         }
